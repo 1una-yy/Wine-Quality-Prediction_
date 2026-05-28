@@ -1,0 +1,774 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wine Quality Advisor · 葡萄酒品質顧問</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+TC:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4ECDA;
+    --paper:#FAF4E6;
+    --paper-2:#EFE5CC;
+    --wine:#4A1820;
+    --wine-2:#6B2935;
+    --wine-soft:#7C3A45;
+    --gold:#B8893E;
+    --gold-soft:#D4B373;
+    --ink:#1F1414;
+    --muted:#7A6864;
+    --line:#D9C9B3;
+    --line-soft:#E6D9BF;
+    --pos:#6F8A3A;
+    --neg:#B8674A;
+
+    --serif:"Cormorant Garamond","Noto Serif TC",Georgia,serif;
+    --sans:"Plus Jakarta Sans","Noto Serif TC",system-ui,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:15px;
+    line-height:1.55;
+    min-height:100vh;
+    background-image:
+      radial-gradient(rgba(74,24,32,0.03) 1px, transparent 1px),
+      radial-gradient(rgba(74,24,32,0.025) 1px, transparent 1px);
+    background-size:24px 24px, 24px 24px;
+    background-position:0 0, 12px 12px;
+  }
+
+  .wrap{max-width:1040px;margin:0 auto;padding:48px 32px 80px}
+
+  /* ============ Header ============ */
+  .top{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:8px}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--sans);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--wine);font-weight:600}
+  .brand .dot{width:6px;height:6px;border-radius:50%;background:var(--gold)}
+  .toggle{display:inline-flex;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px;box-shadow:inset 0 1px 0 #fff8}
+  .toggle button{
+    border:0;background:transparent;padding:7px 16px;border-radius:999px;
+    font-family:var(--sans);font-size:13px;font-weight:500;color:var(--muted);
+    cursor:pointer;transition:all .25s ease;
+    display:flex;align-items:center;gap:8px;
+  }
+  .toggle button .sw{width:7px;height:7px;border-radius:50%;background:var(--line)}
+  .toggle button.active{background:var(--wine);color:var(--paper)}
+  .toggle button.active .sw{background:var(--gold-soft)}
+
+  h1{
+    font-family:var(--serif);font-weight:500;font-size:64px;line-height:1.02;
+    color:var(--wine);margin:14px 0 6px;letter-spacing:-0.01em;
+  }
+  .sub{font-family:var(--serif);font-style:italic;font-size:22px;color:var(--wine-soft);margin:0 0 18px}
+  .rule{display:flex;align-items:center;gap:14px;margin:0 0 36px}
+  .rule .bar{flex:1;height:1px;background:var(--line)}
+  .rule .gold{width:48px;height:2px;background:var(--gold)}
+  .rule .meta{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+
+  /* ============ Tabs ============ */
+  .tabs{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:28px;position:relative}
+  .tabs button{
+    border:0;background:transparent;padding:14px 22px 14px 0;margin-right:24px;
+    font-family:var(--serif);font-size:22px;color:var(--muted);cursor:pointer;
+    position:relative;font-weight:500;
+  }
+  .tabs button .n{font-family:var(--mono);font-size:11px;color:var(--gold);margin-right:8px;vertical-align:3px}
+  .tabs button.active{color:var(--wine)}
+  .tabs button.active::after{
+    content:"";position:absolute;left:0;right:24px;bottom:-1px;height:2px;background:var(--wine);
+  }
+
+  /* ============ Layout ============ */
+  .grid{display:grid;grid-template-columns:380px 1fr;gap:28px;align-items:start}
+  @media (max-width:880px){.grid{grid-template-columns:1fr}}
+
+  .card{
+    background:var(--paper);border:1px solid var(--line);
+    border-radius:6px;padding:22px 24px;
+  }
+  .card h3{
+    font-family:var(--serif);font-size:22px;color:var(--wine);margin:0 0 4px;font-weight:500;
+  }
+  .card .h-sub{font-size:12px;color:var(--muted);letter-spacing:.04em;margin-bottom:18px}
+
+  /* ============ Sliders ============ */
+  .slider-row{padding:10px 0;border-bottom:1px solid var(--line-soft)}
+  .slider-row:last-of-type{border-bottom:none}
+  .slider-row .top-l{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+  .slider-row .lab{font-family:var(--serif);font-style:italic;font-size:15px;color:var(--ink)}
+  .slider-row .val{font-family:var(--mono);font-size:13px;color:var(--wine);font-weight:500}
+  .slider-row .val .unit{color:var(--muted);font-weight:400;margin-left:4px}
+
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;
+    width:100%;height:3px;background:var(--line);border-radius:2px;outline:none;margin:0;
+    cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;
+    width:14px;height:14px;border-radius:50%;background:var(--gold);
+    border:2px solid var(--paper);box-shadow:0 0 0 1px var(--gold);cursor:grab;
+    transition:transform .15s;
+  }
+  input[type=range]::-webkit-slider-thumb:active{cursor:grabbing;transform:scale(1.15)}
+  input[type=range]::-moz-range-thumb{
+    width:14px;height:14px;border-radius:50%;background:var(--gold);
+    border:2px solid var(--paper);box-shadow:0 0 0 1px var(--gold);cursor:grab;
+  }
+
+  .derived{
+    margin-top:14px;padding:10px 12px;background:var(--paper-2);border-radius:4px;
+    display:flex;justify-content:space-between;align-items:baseline;font-size:12px;
+  }
+  .derived .lab{color:var(--muted);font-style:italic;font-family:var(--serif);font-size:14px}
+  .derived .val{font-family:var(--mono);color:var(--wine-2);font-weight:500}
+
+  .reset-btn{
+    margin-top:14px;width:100%;background:transparent;border:1px solid var(--line);
+    color:var(--wine);padding:9px;border-radius:4px;cursor:pointer;
+    font-family:var(--sans);font-size:13px;letter-spacing:.04em;
+    transition:all .2s;
+  }
+  .reset-btn:hover{background:var(--wine);color:var(--paper);border-color:var(--wine)}
+
+  /* ============ Prediction result ============ */
+  .result{
+    background:var(--wine);color:var(--paper);border-radius:6px;padding:24px 28px;
+    position:relative;overflow:hidden;
+  }
+  .result::before{
+    content:"";position:absolute;top:-20px;right:-20px;width:120px;height:120px;
+    background:radial-gradient(circle,rgba(184,137,62,0.18),transparent 70%);
+  }
+  .result .label{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-soft);margin-bottom:14px}
+  .result .label .model{float:right;letter-spacing:.06em;text-transform:none;color:#E8D9B3;font-family:var(--mono);font-size:10px}
+  .result .pct{
+    font-family:var(--serif);font-size:80px;line-height:1;font-weight:500;
+    letter-spacing:-0.02em;color:var(--paper);
+  }
+  .result .pct .sign{font-size:36px;color:var(--gold-soft);vertical-align:top;margin-left:4px}
+  .result .pct-sub{font-size:13px;color:#E8D9B3;margin-top:6px;font-style:italic;font-family:var(--serif)}
+
+  .verdict{
+    margin-top:18px;padding:10px 14px;border:1px solid rgba(212,179,115,0.4);
+    border-radius:4px;display:flex;justify-content:space-between;align-items:center;
+    font-size:13px;
+  }
+  .verdict .v-lab{color:var(--gold-soft);letter-spacing:.08em;text-transform:uppercase;font-size:11px}
+  .verdict .v-val{font-family:var(--serif);font-size:18px;font-weight:500}
+  .verdict.high{background:linear-gradient(to right,transparent,rgba(111,138,58,0.15))}
+  .verdict.low{background:linear-gradient(to right,transparent,rgba(184,103,74,0.15))}
+
+  .bar-track{margin-top:16px;height:4px;background:rgba(232,217,179,0.2);border-radius:2px;position:relative;overflow:hidden}
+  .bar-fill{height:100%;background:var(--gold);transition:width .35s ease-out;border-radius:2px}
+  .bar-tick{position:absolute;top:-3px;left:50%;width:1px;height:10px;background:#E8D9B3;opacity:.5}
+  .bar-scale{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:#E8D9B3;margin-top:6px;opacity:.7}
+
+  /* ============ SHAP bars ============ */
+  .shap{margin-top:22px}
+  .shap-row{
+    display:grid;grid-template-columns:130px 1fr 60px;align-items:center;gap:14px;
+    padding:7px 0;border-bottom:1px solid var(--line-soft);
+  }
+  .shap-row:last-of-type{border-bottom:none}
+  .shap-name{font-family:var(--serif);font-style:italic;font-size:14px;color:var(--ink);text-align:right}
+  .shap-track{
+    position:relative;height:18px;background:transparent;
+    border-left:1px solid var(--line);
+  }
+  .shap-track::before{
+    content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--line);
+  }
+  .shap-bar{position:absolute;top:3px;bottom:3px;border-radius:2px;transition:all .3s ease-out}
+  .shap-bar.pos{background:var(--pos)}
+  .shap-bar.neg{background:var(--neg)}
+  .shap-val{font-family:var(--mono);font-size:12px;font-weight:500;text-align:right}
+  .shap-val.pos{color:var(--pos)}
+  .shap-val.neg{color:var(--neg)}
+
+  .narrative{
+    margin-top:18px;padding-top:16px;border-top:1px solid var(--line-soft);
+    font-family:var(--serif);font-style:italic;font-size:15px;color:var(--ink);line-height:1.6;
+  }
+  .narrative .accent{font-style:normal;color:var(--wine);font-weight:500}
+
+  .metrics-foot{
+    margin-top:18px;display:flex;gap:18px;font-family:var(--mono);font-size:11px;
+    color:var(--muted);flex-wrap:wrap;
+  }
+  .metrics-foot span b{color:var(--ink);font-weight:500}
+
+  /* ============ Compare tab ============ */
+  .cmp-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:32px}
+  @media (max-width:880px){.cmp-grid{grid-template-columns:1fr}}
+  .cmp-card h4{
+    font-family:var(--serif);font-size:24px;color:var(--wine);margin:0 0 4px;font-weight:500;
+    display:flex;align-items:center;gap:10px;
+  }
+  .cmp-card h4 .sw{width:10px;height:10px;border-radius:50%}
+  .cmp-card h4 .sw.red{background:var(--wine)}
+  .cmp-card h4 .sw.white{background:var(--gold-soft);border:1px solid var(--gold)}
+  .cmp-card .h4-sub{font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:18px}
+
+  .imp-row{display:grid;grid-template-columns:130px 1fr 50px;align-items:center;gap:10px;padding:6px 0;font-size:13px}
+  .imp-row .n{font-family:var(--serif);font-style:italic;color:var(--ink);text-align:right}
+  .imp-row .t{height:8px;background:var(--paper-2);border-radius:3px;position:relative;overflow:hidden}
+  .imp-row .t .f{height:100%;background:var(--wine);border-radius:3px}
+  .imp-row.white-card .t .f{background:var(--gold)}
+  .imp-row .v{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:right}
+
+  .biz-table{
+    background:var(--paper);border:1px solid var(--line);border-radius:6px;overflow:hidden;
+  }
+  .biz-table .biz-head{
+    background:var(--wine);color:var(--paper);padding:14px 22px;
+  }
+  .biz-table .biz-head .t{font-family:var(--serif);font-size:22px;font-weight:500}
+  .biz-table .biz-head .s{font-size:12px;color:var(--gold-soft);letter-spacing:.04em;margin-top:2px}
+  .biz-table table{width:100%;border-collapse:collapse;font-size:13px}
+  .biz-table th,.biz-table td{padding:14px 18px;text-align:left;border-bottom:1px solid var(--line-soft);vertical-align:top}
+  .biz-table thead th{
+    background:var(--paper-2);color:var(--wine);font-family:var(--serif);font-size:15px;
+    font-weight:500;font-style:italic;
+  }
+  .biz-table td.dim{color:var(--muted);font-family:var(--serif);font-style:italic;font-size:14px;width:120px}
+  .biz-table td.note{color:var(--ink);font-style:italic;font-family:var(--serif);font-size:14px;line-height:1.5}
+  .biz-table tr:last-child td{border-bottom:none}
+  .biz-table .pill{display:inline-block;font-size:11px;font-family:var(--mono);padding:2px 8px;border-radius:3px;margin-left:6px}
+  .biz-table .pill.pos{background:rgba(111,138,58,0.15);color:#4F6228}
+  .biz-table .pill.neg{background:rgba(184,103,74,0.15);color:#8A4A33}
+
+  /* ============ Batch tab ============ */
+  .batch-input{
+    width:100%;font-family:var(--mono);font-size:12px;color:var(--ink);
+    background:var(--paper-2);border:1px solid var(--line);border-radius:4px;
+    padding:12px;resize:vertical;min-height:140px;
+  }
+  .batch-input:focus{outline:none;border-color:var(--gold)}
+  .batch-controls{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+  .btn{
+    background:var(--wine);color:var(--paper);border:0;padding:9px 18px;border-radius:4px;
+    font-family:var(--sans);font-size:13px;letter-spacing:.05em;cursor:pointer;
+    transition:all .2s;
+  }
+  .btn:hover{background:var(--wine-2)}
+  .btn.ghost{background:transparent;color:var(--wine);border:1px solid var(--line)}
+  .btn.ghost:hover{background:var(--paper-2)}
+
+  .batch-table{margin-top:20px;background:var(--paper);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .batch-table table{width:100%;border-collapse:collapse;font-size:12px;font-family:var(--mono)}
+  .batch-table th{background:var(--paper-2);color:var(--wine);text-align:left;padding:10px 12px;font-family:var(--sans);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:500}
+  .batch-table td{padding:9px 12px;border-top:1px solid var(--line-soft)}
+  .batch-table td .flag{display:inline-block;padding:2px 7px;border-radius:3px;font-size:10px;font-family:var(--sans);letter-spacing:.06em;text-transform:uppercase}
+  .batch-table td .flag.high{background:rgba(111,138,58,0.18);color:#4F6228}
+  .batch-table td .flag.low{background:rgba(184,103,74,0.18);color:#8A4A33}
+  .batch-empty{padding:30px;color:var(--muted);text-align:center;font-family:var(--serif);font-style:italic;font-size:15px}
+
+  /* ============ Footer ============ */
+  .foot{
+    margin-top:64px;padding-top:24px;border-top:1px solid var(--line);
+    display:flex;justify-content:space-between;align-items:center;
+    font-size:11px;color:var(--muted);letter-spacing:.04em;
+  }
+  .foot .left{font-family:var(--serif);font-style:italic;font-size:13px}
+
+  .hidden{display:none !important}
+
+  @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .tab-content{animation:fadeIn .35s ease-out}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header -->
+  <div class="top">
+    <div class="brand"><span class="dot"></span>Wine Quality Advisor</div>
+    <div class="toggle" id="toggle">
+      <button data-wine="red" class="active"><span class="sw"></span>Red wine</button>
+      <button data-wine="white"><span class="sw"></span>White wine</button>
+    </div>
+  </div>
+  <h1>葡萄酒品質顧問</h1>
+  <p class="sub">A predictive companion for Vinho Verde — red & white</p>
+  <div class="rule">
+    <div class="gold"></div>
+    <div class="meta">Cortez et al. 2009 · UCI Wine Quality</div>
+    <div class="bar"></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs" id="tabs">
+    <button data-tab="predict" class="active"><span class="n">01</span>Predict</button>
+    <button data-tab="compare"><span class="n">02</span>Compare red vs white</button>
+    <button data-tab="batch"><span class="n">03</span>Batch screening</button>
+  </div>
+
+  <!-- ====== Predict tab ====== -->
+  <section id="tab-predict" class="tab-content">
+    <div class="grid">
+      <!-- LEFT: inputs -->
+      <div class="card">
+        <h3>Chemical inputs</h3>
+        <div class="h-sub">11 physico-chemical measurements</div>
+        <div id="sliders"></div>
+        <div class="derived">
+          <span class="lab">acid_ratio <span style="font-size:11px;color:var(--muted)">(derived)</span></span>
+          <span class="val" id="acid-ratio">—</span>
+        </div>
+        <button class="reset-btn" id="reset-btn">Reset to median</button>
+      </div>
+
+      <!-- RIGHT: result + SHAP -->
+      <div>
+        <div class="result">
+          <div class="label">Prediction
+            <span class="model" id="model-label">Logistic Regression · red</span>
+          </div>
+          <div class="pct"><span id="pct">—</span><span class="sign">%</span></div>
+          <div class="pct-sub">probability of being graded high quality (q ≥ 7)</div>
+          <div class="verdict" id="verdict">
+            <span class="v-lab">Verdict</span>
+            <span class="v-val" id="verdict-text">—</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-tick"></div>
+            <div class="bar-fill" id="prob-bar" style="width:0"></div>
+          </div>
+          <div class="bar-scale"><span>0%</span><span>threshold 50%</span><span>100%</span></div>
+        </div>
+
+        <div class="card" style="margin-top:18px">
+          <h3>Why this prediction</h3>
+          <div class="h-sub">SHAP-equivalent contributions · log-odds space · top 8 features</div>
+          <div class="shap" id="shap-bars"></div>
+          <div class="narrative" id="narrative">—</div>
+          <div class="metrics-foot" id="metrics-foot"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== Compare tab ====== -->
+  <section id="tab-compare" class="tab-content hidden">
+    <div class="cmp-grid">
+      <div class="card cmp-card">
+        <h4><span class="sw red"></span>Red wine</h4>
+        <div class="h4-sub">Random Forest feature importance</div>
+        <div id="cmp-red"></div>
+      </div>
+      <div class="card cmp-card">
+        <h4><span class="sw white"></span>White wine</h4>
+        <div class="h4-sub">Random Forest feature importance</div>
+        <div id="cmp-white"></div>
+      </div>
+    </div>
+
+    <div class="biz-table">
+      <div class="biz-head">
+        <div class="t">SHAP business comparison</div>
+        <div class="s">Where the two wines diverge — and what it means</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Dimension</th>
+            <th>White wine</th>
+            <th>Red wine</th>
+            <th>Business reading</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="dim">Most important</td>
+            <td><b>Alcohol</b></td>
+            <td><b>Alcohol</b></td>
+            <td class="note">Both correlate strongly with ripeness / fermentation completion</td>
+          </tr>
+          <tr>
+            <td class="dim">Second driver</td>
+            <td>Density<span class="pill neg">negative</span></td>
+            <td>Sulphates<span class="pill pos">positive</span></td>
+            <td class="note">White prizes balance & freshness; red prizes body & structure</td>
+          </tr>
+          <tr>
+            <td class="dim">Acidity effect</td>
+            <td>Moderate</td>
+            <td>Very strong (acid_ratio, volatile acidity)</td>
+            <td class="note">Red wine is far more sensitive to acid structure and ferment stability</td>
+          </tr>
+          <tr>
+            <td class="dim">Sulfur effect</td>
+            <td>High (free / total SO₂)</td>
+            <td>Moderate</td>
+            <td class="note">White wine needs stricter preservation & anti-oxidation control</td>
+          </tr>
+          <tr>
+            <td class="dim">Risk signature</td>
+            <td>High density, high residual sugar</td>
+            <td>High volatile acidity, high acid_ratio</td>
+            <td class="note">Usable as an early-warning indicator in production</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ====== Batch tab ====== -->
+  <section id="tab-batch" class="tab-content hidden">
+    <div class="card">
+      <h3>Batch screening</h3>
+      <div class="h-sub">Paste CSV (semicolons or commas) with the 11 chemical columns — predictions run instantly</div>
+      <textarea class="batch-input" id="batch-input" spellcheck="false"
+placeholder="fixed acidity;volatile acidity;citric acid;residual sugar;chlorides;free sulfur dioxide;total sulfur dioxide;density;pH;sulphates;alcohol
+7.4;0.70;0.00;1.9;0.076;11;34;0.9978;3.51;0.56;9.4
+..."></textarea>
+      <div class="batch-controls">
+        <button class="btn" id="batch-run">Run predictions</button>
+        <button class="btn ghost" id="batch-sample">Load sample (5 rows)</button>
+        <button class="btn ghost" id="batch-clear">Clear</button>
+      </div>
+    </div>
+
+    <div class="batch-table" id="batch-out">
+      <div class="batch-empty">No batch processed yet — paste rows above and press “Run predictions”.</div>
+    </div>
+  </section>
+
+  <div class="foot">
+    <div class="left">Built on Cortez, Cerdeira, Almeida, Matos & Reis (2009)</div>
+    <div>葡萄酒品質預測系統 · 期末專題</div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  Models bundle (trained from winequality-red.csv & -white.csv,
+//  Logistic Regression with class_weight='balanced'.  Linear
+//  model on standardized features → coef_i * z_i equals exact
+//  Shapley value of feature i in log-odds space.)
+// ============================================================
+const MODELS = {"red":{"name":"Red","features":["fixed acidity","volatile acidity","citric acid","residual sugar","chlorides","free sulfur dioxide","total sulfur dioxide","density","pH","sulphates","alcohol","acid_ratio"],"mean":[8.325483,0.528505,0.275483,2.547654,0.087603,16.180313,47.927783,0.996736,3.309016,0.657562,10.42444,0.067213],"scale":[1.759397,0.184566,0.193392,1.393077,0.047006,10.646216,34.075793,0.00188,0.155153,0.171347,1.082805,0.029362],"coef":[0.479724,-0.498741,-0.182475,0.239269,-0.421893,-0.043012,-0.327482,-0.297193,-0.149383,0.601789,1.062023,-0.12901],"intercept":-1.035766,"metrics":{"accuracy":0.7941,"precision":0.3827,"recall":0.8378,"f1":0.5254,"auc":0.8843},"rf_importance":{"fixed acidity":0.0641,"volatile acidity":0.0819,"citric acid":0.0791,"residual sugar":0.038,"chlorides":0.0601,"free sulfur dioxide":0.0491,"total sulfur dioxide":0.0653,"density":0.0689,"pH":0.0518,"sulphates":0.129,"alcohol":0.202,"acid_ratio":0.1107},"p01":[5.2,0.2,0.0,1.4,0.042,3.0,8.0,0.9919,2.94,0.43,9.0,0.0225],"p99":[13.242,1.0292,0.7042,8.3,0.3684,50.0,145.84,1.0014,3.7042,1.28,13.4,0.153],"median":[7.9,0.52,0.26,2.2,0.079,14.0,38.0,0.9967,3.31,0.62,10.2,0.0656],"n_total":1359,"n_high":184},"white":{"name":"White","features":["fixed acidity","volatile acidity","citric acid","residual sugar","chlorides","free sulfur dioxide","total sulfur dioxide","density","pH","sulphates","alcohol","acid_ratio"],"mean":[6.837042,0.281741,0.334628,5.964773,0.046224,34.946338,137.408617,0.993805,3.193475,0.490552,10.591278,0.041902],"scale":[0.858624,0.105158,0.124837,4.90398,0.023749,17.594172,43.446441,0.002933,0.151462,0.114702,1.223097,0.016833],"coef":[0.347525,-0.174489,0.026073,1.09415,-0.323212,0.27132,-0.180213,-1.505589,0.560067,0.148122,0.476802,-0.209694],"intercept":-0.533465,"metrics":{"accuracy":0.7339,"precision":0.4263,"recall":0.8061,"f1":0.5577,"auc":0.8255},"rf_importance":{"fixed acidity":0.0558,"volatile acidity":0.056,"citric acid":0.0652,"residual sugar":0.0734,"chlorides":0.0914,"free sulfur dioxide":0.0705,"total sulfur dioxide":0.0837,"density":0.1228,"pH":0.0727,"sulphates":0.0569,"alcohol":0.1781,"acid_ratio":0.0738},"p01":[5.0,0.12,0.04,0.9,0.02,5.0,50.0,0.9887,2.89,0.29,8.7,0.017],"p99":[9.3,0.64,0.74,18.75,0.1684,79.7,243.0,1.0002,3.6,0.824,13.4,0.1022],"median":[6.8,0.26,0.32,4.7,0.042,33.0,133.0,0.9935,3.18,0.48,10.4,0.0387],"n_total":3961,"n_high":825}};
+
+// Display metadata for the 11 raw inputs
+const META = {
+  'fixed acidity':       {label:'Fixed acidity',     unit:'g/L',   step:0.1   },
+  'volatile acidity':    {label:'Volatile acidity',  unit:'g/L',   step:0.01  },
+  'citric acid':         {label:'Citric acid',       unit:'g/L',   step:0.01  },
+  'residual sugar':      {label:'Residual sugar',    unit:'g/L',   step:0.1   },
+  'chlorides':           {label:'Chlorides',         unit:'g/L',   step:0.001 },
+  'free sulfur dioxide': {label:'Free SO₂',          unit:'mg/L',  step:1     },
+  'total sulfur dioxide':{label:'Total SO₂',         unit:'mg/L',  step:1     },
+  'density':             {label:'Density',           unit:'g/cm³', step:0.0001},
+  'pH':                  {label:'pH',                unit:'',      step:0.01  },
+  'sulphates':           {label:'Sulphates',         unit:'g/L',   step:0.01  },
+  'alcohol':             {label:'Alcohol',           unit:'%vol',  step:0.1   },
+};
+const RAW_FEATURES = Object.keys(META);
+
+let activeWine = 'red';
+let inputs = {}; // current slider values, by feature name
+
+// -------------- helpers --------------
+function sigmoid(z){return 1/(1+Math.exp(-z));}
+function fmt(v, step){
+  if(step >= 1) return Math.round(v).toString();
+  const d = step < 0.001 ? 4 : step < 0.01 ? 3 : step < 0.1 ? 2 : 1;
+  return v.toFixed(d);
+}
+
+// -------------- build sliders for the active wine --------------
+function buildSliders(){
+  const m = MODELS[activeWine];
+  const sliders = document.getElementById('sliders');
+  sliders.innerHTML = '';
+  inputs = {};
+  RAW_FEATURES.forEach((f, idx) => {
+    const meta = META[f];
+    const min  = m.p01[idx];
+    const max  = m.p99[idx];
+    const mid  = m.median[idx];
+    inputs[f]  = mid;
+    const row = document.createElement('div');
+    row.className = 'slider-row';
+    row.innerHTML = `
+      <div class="top-l">
+        <span class="lab">${meta.label}</span>
+        <span class="val"><span id="v-${idx}">${fmt(mid, meta.step)}</span><span class="unit">${meta.unit}</span></span>
+      </div>
+      <input type="range" id="s-${idx}" min="${min}" max="${max}" step="${meta.step}" value="${mid}">
+    `;
+    sliders.appendChild(row);
+    const slider = row.querySelector('input');
+    slider.addEventListener('input', e => {
+      inputs[f] = parseFloat(e.target.value);
+      document.getElementById(`v-${idx}`).textContent = fmt(inputs[f], meta.step);
+      predict();
+    });
+  });
+}
+
+// -------------- compute prediction + SHAP --------------
+function predict(){
+  const m = MODELS[activeWine];
+
+  // Derive acid_ratio from current inputs
+  const fa = inputs['fixed acidity'];
+  const va = inputs['volatile acidity'];
+  const acidRatio = fa !== 0 ? va / fa : 0;
+  document.getElementById('acid-ratio').textContent = acidRatio.toFixed(4);
+
+  // Assemble the feature vector in model order (acid_ratio last)
+  const x = m.features.map((f, i) => {
+    if (f === 'acid_ratio') return acidRatio;
+    return inputs[f];
+  });
+
+  // Standardize and compute per-feature contributions in log-odds space.
+  // For a linear model on standardized features, contribution_i = coef_i * z_i
+  // IS the exact Shapley value (game-theoretic) in log-odds.
+  const contribs = x.map((xi, i) => {
+    const z = (xi - m.mean[i]) / m.scale[i];
+    return { feature: m.features[i], z, contribution: m.coef[i] * z };
+  });
+  const logOdds = m.intercept + contribs.reduce((s, c) => s + c.contribution, 0);
+  const prob = sigmoid(logOdds);
+  const pct = Math.round(prob * 100);
+
+  // --- update probability display ---
+  document.getElementById('pct').textContent = pct;
+  document.getElementById('prob-bar').style.width = pct + '%';
+
+  const verdict = document.getElementById('verdict');
+  const verdictText = document.getElementById('verdict-text');
+  if (prob >= 0.5) {
+    verdict.className = 'verdict high';
+    verdictText.textContent = 'High quality (q ≥ 7)';
+  } else {
+    verdict.className = 'verdict low';
+    verdictText.textContent = 'Standard';
+  }
+
+  // --- update SHAP bars (top 8 by |contribution|) ---
+  const top = [...contribs].sort((a,b) => Math.abs(b.contribution) - Math.abs(a.contribution)).slice(0, 8);
+  const maxAbs = Math.max(...top.map(c => Math.abs(c.contribution)), 0.0001);
+
+  const shap = document.getElementById('shap-bars');
+  shap.innerHTML = top.map(c => {
+    const pct = Math.abs(c.contribution) / maxAbs * 48; // bar half-width as % of track
+    const sign = c.contribution >= 0 ? 'pos' : 'neg';
+    const side = c.contribution >= 0 ? `left:50%;width:${pct}%`
+                                     : `right:50%;width:${pct}%`;
+    const label = META[c.feature] ? META[c.feature].label : c.feature;
+    const valStr = (c.contribution >= 0 ? '+' : '−') + Math.abs(c.contribution).toFixed(2);
+    return `
+      <div class="shap-row">
+        <div class="shap-name">${label}</div>
+        <div class="shap-track"><div class="shap-bar ${sign}" style="${side}"></div></div>
+        <div class="shap-val ${sign}">${valStr}</div>
+      </div>`;
+  }).join('');
+
+  // --- narrative ---
+  const pos = top.filter(c => c.contribution > 0).slice(0,2).map(c => META[c.feature]?META[c.feature].label:c.feature);
+  const neg = top.filter(c => c.contribution < 0).slice(0,2).map(c => META[c.feature]?META[c.feature].label:c.feature);
+  const wineLabel = activeWine === 'red' ? '紅酒' : '白酒';
+  let narr = '';
+  if (pos.length > 0) {
+    narr += `主要推升因子：<span class="accent">${pos.join('、')}</span>。`;
+  }
+  if (neg.length > 0) {
+    narr += ` 主要拖累因子：<span class="accent">${neg.join('、')}</span>。`;
+  }
+  if (prob >= 0.7) narr += ` 整體屬於 ${wineLabel} 高品質候選。`;
+  else if (prob >= 0.5) narr += ` 落在門檻邊緣，建議再做一次感官評估。`;
+  else if (prob >= 0.3) narr += ` 暫未進入 ${wineLabel} 高品質區間。`;
+  else                   narr += ` 與高品質特徵差距較大，可作為早期品質警示。`;
+  document.getElementById('narrative').innerHTML = narr;
+
+  // --- metrics footer ---
+  const M = m.metrics;
+  document.getElementById('metrics-foot').innerHTML = `
+    <span>Model · <b>${m.name} LR</b></span>
+    <span>Accuracy · <b>${M.accuracy}</b></span>
+    <span>Precision · <b>${M.precision}</b></span>
+    <span>Recall · <b>${M.recall}</b></span>
+    <span>F1 · <b>${M.f1}</b></span>
+    <span>AUC · <b>${M.auc}</b></span>
+  `;
+
+  document.getElementById('model-label').textContent =
+    `Logistic Regression · ${activeWine}`;
+}
+
+// -------------- Compare tab --------------
+function renderCompare(){
+  ['red','white'].forEach(w => {
+    const m = MODELS[w];
+    const entries = Object.entries(m.rf_importance)
+      .sort((a,b) => b[1] - a[1]);
+    const max = entries[0][1];
+    const container = document.getElementById('cmp-' + w);
+    container.innerHTML = entries.map(([name, val]) => {
+      const pct = (val / max * 100).toFixed(1);
+      const label = META[name] ? META[name].label : name;
+      const rowClass = w === 'white' ? 'imp-row white-card' : 'imp-row';
+      return `
+        <div class="${rowClass}">
+          <div class="n">${label}</div>
+          <div class="t"><div class="f" style="width:${pct}%"></div></div>
+          <div class="v">${val.toFixed(3)}</div>
+        </div>`;
+    }).join('');
+  });
+}
+
+// -------------- Batch tab --------------
+const SAMPLE_CSV = `fixed acidity;volatile acidity;citric acid;residual sugar;chlorides;free sulfur dioxide;total sulfur dioxide;density;pH;sulphates;alcohol
+7.4;0.70;0.00;1.9;0.076;11;34;0.9978;3.51;0.56;9.4
+11.2;0.28;0.56;1.9;0.075;17;60;0.9980;3.16;0.58;9.8
+7.9;0.32;0.51;1.8;0.341;17;56;0.9969;3.04;1.08;9.2
+6.7;0.32;0.44;2.4;0.061;24;34;0.9948;3.29;0.80;11.6
+8.1;0.38;0.28;2.1;0.066;13;30;0.9968;3.23;0.73;9.7
+12.5;0.34;0.55;2.5;0.067;13;28;0.9947;3.26;0.85;13.0`;
+
+function parseCSV(text){
+  const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) return {error:'Need at least a header row + one data row.'};
+  const sep = lines[0].includes(';') ? ';' : ',';
+  const header = lines[0].split(sep).map(s => s.trim().toLowerCase());
+  // Find columns matching our 11 raw features (case-insensitive)
+  const idx = {};
+  for (const f of RAW_FEATURES){
+    const i = header.indexOf(f.toLowerCase());
+    if (i === -1) return {error:`Missing column: ${f}`};
+    idx[f] = i;
+  }
+  const rows = [];
+  for (let r = 1; r < lines.length; r++){
+    const cells = lines[r].split(sep).map(s => s.trim());
+    const row = {};
+    let ok = true;
+    for (const f of RAW_FEATURES){
+      const v = parseFloat(cells[idx[f]]);
+      if (isNaN(v)) { ok = false; break; }
+      row[f] = v;
+    }
+    if (ok) rows.push(row);
+  }
+  return {rows};
+}
+
+function predictRow(row){
+  const m = MODELS[activeWine];
+  const fa = row['fixed acidity'];
+  const va = row['volatile acidity'];
+  const ar = fa !== 0 ? va / fa : 0;
+  const x = m.features.map(f => f === 'acid_ratio' ? ar : row[f]);
+  let z = m.intercept;
+  for (let i = 0; i < x.length; i++){
+    z += m.coef[i] * (x[i] - m.mean[i]) / m.scale[i];
+  }
+  return sigmoid(z);
+}
+
+function runBatch(){
+  const txt = document.getElementById('batch-input').value;
+  const out = document.getElementById('batch-out');
+  if (!txt.trim()){
+    out.innerHTML = `<div class="batch-empty">No batch processed yet — paste rows above and press “Run predictions”.</div>`;
+    return;
+  }
+  const parsed = parseCSV(txt);
+  if (parsed.error){
+    out.innerHTML = `<div class="batch-empty" style="color:var(--neg)">⚠ ${parsed.error}</div>`;
+    return;
+  }
+  const results = parsed.rows.map((r, i) => ({
+    idx: i + 1,
+    alcohol: r['alcohol'],
+    va: r['volatile acidity'],
+    sulphates: r['sulphates'],
+    prob: predictRow(r),
+  }));
+  // Sort: lowest probability first (highest risk surfaces at top)
+  const sorted = [...results].sort((a,b) => a.prob - b.prob);
+  const rows = sorted.map(r => {
+    const high = r.prob >= 0.5;
+    const flag = high ? '<span class="flag high">high quality</span>'
+                      : (r.prob < 0.2 ? '<span class="flag low">at risk</span>' : '<span class="flag low">standard</span>');
+    return `<tr>
+      <td>${r.idx}</td>
+      <td>${r.alcohol.toFixed(1)}</td>
+      <td>${r.va.toFixed(2)}</td>
+      <td>${r.sulphates.toFixed(2)}</td>
+      <td>${(r.prob * 100).toFixed(1)}%</td>
+      <td>${flag}</td>
+    </tr>`;
+  }).join('');
+  out.innerHTML = `
+    <table>
+      <thead><tr>
+        <th>#</th><th>Alcohol</th><th>Vol. acid.</th><th>Sulphates</th>
+        <th>Probability</th><th>Flag (sorted, risk first)</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// -------------- wire up --------------
+document.querySelectorAll('#toggle button').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('#toggle button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    activeWine = b.dataset.wine;
+    buildSliders();
+    predict();
+    renderCompare();
+  });
+});
+
+document.querySelectorAll('#tabs button').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('#tabs button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    const id = b.dataset.tab;
+    ['predict','compare','batch'].forEach(t => {
+      const el = document.getElementById('tab-' + t);
+      if (t === id) el.classList.remove('hidden');
+      else el.classList.add('hidden');
+    });
+    if (id === 'compare') renderCompare();
+  });
+});
+
+document.getElementById('reset-btn').addEventListener('click', () => {
+  buildSliders();
+  predict();
+});
+
+document.getElementById('batch-run').addEventListener('click', runBatch);
+document.getElementById('batch-sample').addEventListener('click', () => {
+  document.getElementById('batch-input').value = SAMPLE_CSV;
+});
+document.getElementById('batch-clear').addEventListener('click', () => {
+  document.getElementById('batch-input').value = '';
+  document.getElementById('batch-out').innerHTML =
+    `<div class="batch-empty">No batch processed yet — paste rows above and press “Run predictions”.</div>`;
+});
+
+// initial render
+buildSliders();
+predict();
+renderCompare();
+</script>
+</body>
+</html>
